@@ -14,7 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alert_logs: {
+        Row: {
+          alert_type: string
+          collision_event_id: string | null
+          id: string
+          message: string
+          triggered_at: string
+        }
+        Insert: {
+          alert_type: string
+          collision_event_id?: string | null
+          id?: string
+          message: string
+          triggered_at?: string
+        }
+        Update: {
+          alert_type?: string
+          collision_event_id?: string | null
+          id?: string
+          message?: string
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_logs_collision_event_id_fkey"
+            columns: ["collision_event_id"]
+            isOneToOne: false
+            referencedRelation: "collision_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collision_events: {
+        Row: {
+          alert_sent: boolean
+          created_at: string
+          distance: number
+          id: string
+          location_lat: number
+          location_lng: number
+          notes: string | null
+          relative_speed: number
+          severity: string
+          timestamp: string
+          vehicle_count: number
+          weather_condition: string | null
+        }
+        Insert: {
+          alert_sent?: boolean
+          created_at?: string
+          distance: number
+          id?: string
+          location_lat: number
+          location_lng: number
+          notes?: string | null
+          relative_speed: number
+          severity: string
+          timestamp?: string
+          vehicle_count?: number
+          weather_condition?: string | null
+        }
+        Update: {
+          alert_sent?: boolean
+          created_at?: string
+          distance?: number
+          id?: string
+          location_lat?: number
+          location_lng?: number
+          notes?: string | null
+          relative_speed?: number
+          severity?: string
+          timestamp?: string
+          vehicle_count?: number
+          weather_condition?: string | null
+        }
+        Relationships: []
+      }
+      vehicle_tracking: {
+        Row: {
+          created_at: string
+          current_lat: number
+          current_lng: number
+          heading: number
+          id: string
+          last_update: string
+          speed: number
+          status: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_lat: number
+          current_lng: number
+          heading?: number
+          id?: string
+          last_update?: string
+          speed?: number
+          status?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          current_lat?: number
+          current_lng?: number
+          heading?: number
+          id?: string
+          last_update?: string
+          speed?: number
+          status?: string
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
