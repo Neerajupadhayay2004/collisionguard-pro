@@ -5,6 +5,8 @@ import StatsCard from '@/components/StatsCard';
 import CollisionHistory from '@/components/CollisionHistory';
 import AlertSystem from '@/components/AlertSystem';
 import DemoDataButton from '@/components/DemoDataButton';
+import CameraDetection from '@/components/CameraDetection';
+import RideController from '@/components/RideController';
 import { Activity, AlertTriangle, Gauge, Shield } from 'lucide-react';
 
 const Index = () => {
@@ -14,6 +16,8 @@ const Index = () => {
     averageSpeed: 0,
     safetyScore: 0,
   });
+  const [isRideActive, setIsRideActive] = useState(false);
+  const [detectedSpeed, setDetectedSpeed] = useState(0);
 
   useEffect(() => {
     fetchStats();
@@ -99,6 +103,21 @@ const Index = () => {
           icon={Shield}
           severity={getSafetyScoreSeverity(stats.safetyScore)}
         />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <CameraDetection 
+            onSpeedDetected={setDetectedSpeed}
+            isRideActive={isRideActive}
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <RideController 
+            onRideStateChange={setIsRideActive}
+            detectedSpeed={detectedSpeed}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
