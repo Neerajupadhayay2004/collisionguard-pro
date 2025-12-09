@@ -22,3 +22,6 @@ verify_jwt = false
 
 [functions.suggest-safe-route]
 verify_jwt = false
+
+[functions.get-navigation-route]
+verify_jwt = false
