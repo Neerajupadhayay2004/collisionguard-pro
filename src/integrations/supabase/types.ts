@@ -91,6 +91,125 @@ export type Database = {
         }
         Relationships: []
       }
+      emergency_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      sos_alerts: {
+        Row: {
+          id: string
+          location_lat: number
+          location_lng: number
+          message: string | null
+          status: string
+          triggered_at: string
+          trip_id: string | null
+        }
+        Insert: {
+          id?: string
+          location_lat: number
+          location_lng: number
+          message?: string | null
+          status?: string
+          triggered_at?: string
+          trip_id?: string | null
+        }
+        Update: {
+          id?: string
+          location_lat?: number
+          location_lng?: number
+          message?: string | null
+          status?: string
+          triggered_at?: string
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_alerts_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trip_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_history: {
+        Row: {
+          avg_speed: number
+          collision_count: number
+          created_at: string
+          end_lat: number | null
+          end_lng: number | null
+          end_time: string | null
+          id: string
+          max_speed: number
+          route_points: Json | null
+          safety_score: number
+          start_lat: number
+          start_lng: number
+          start_time: string
+          total_distance: number
+          vehicle_id: string
+        }
+        Insert: {
+          avg_speed?: number
+          collision_count?: number
+          created_at?: string
+          end_lat?: number | null
+          end_lng?: number | null
+          end_time?: string | null
+          id?: string
+          max_speed?: number
+          route_points?: Json | null
+          safety_score?: number
+          start_lat: number
+          start_lng: number
+          start_time?: string
+          total_distance?: number
+          vehicle_id: string
+        }
+        Update: {
+          avg_speed?: number
+          collision_count?: number
+          created_at?: string
+          end_lat?: number | null
+          end_lng?: number | null
+          end_time?: string | null
+          id?: string
+          max_speed?: number
+          route_points?: Json | null
+          safety_score?: number
+          start_lat?: number
+          start_lng?: number
+          start_time?: string
+          total_distance?: number
+          vehicle_id?: string
+        }
+        Relationships: []
+      }
       vehicle_tracking: {
         Row: {
           created_at: string
