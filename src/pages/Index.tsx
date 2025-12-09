@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import CollisionMap from '@/components/CollisionMap';
 import StatsCard from '@/components/StatsCard';
@@ -11,7 +11,11 @@ import SafeRouteAI from '@/components/SafeRouteAI';
 import WeatherTrafficAlert from '@/components/WeatherTrafficAlert';
 import EmergencySOS from '@/components/EmergencySOS';
 import TripHistory from '@/components/TripHistory';
-import { Activity, AlertTriangle, Gauge, Shield, Map, History, Route } from 'lucide-react';
+import NavigationRoute from '@/components/NavigationRoute';
+import VoiceControlPanel from '@/components/VoiceControlPanel';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import { Activity, AlertTriangle, Gauge, Shield, Map, History } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [stats, setStats] = useState({
@@ -24,6 +28,67 @@ const Index = () => {
   const [detectedSpeed, setDetectedSpeed] = useState(0);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
+  const [routeCoordinates, setRouteCoordinates] = useState<{ lat: number; lng: number }[]>([]);
+  const [dangerZones, setDangerZones] = useState<{ lat: number; lng: number; reason: string }[]>([]);
+  const [destination, setDestination] = useState('');
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Voice command handler
+  const handleVoiceCommand = useCallback((command: string, params?: any) => {
+    console.log('Voice command received:', command, params);
+    
+    switch (command) {
+      case 'START_RIDE':
+        if (!isRideActive) {
+          // Trigger start ride - this will be handled by RideController
+          document.querySelector<HTMLButtonElement>('[data-ride-button="start"]')?.click();
+        }
+        break;
+      case 'STOP_RIDE':
+        if (isRideActive) {
+          document.querySelector<HTMLButtonElement>('[data-ride-button="stop"]')?.click();
+        }
+        break;
+      case 'SOS':
+        document.querySelector<HTMLButtonElement>('[data-sos-button]')?.click();
+        break;
+      case 'NAVIGATE':
+        if (params?.destination) {
+          setDestination(params.destination);
+          setTimeout(() => {
+            document.querySelector<HTMLButtonElement>('[data-navigate-button]')?.click();
+          }, 100);
+        }
+        break;
+      case 'CLEAR_ROUTE':
+        setRouteCoordinates([]);
+        setDangerZones([]);
+        setDestination('');
+        break;
+      case 'GET_SPEED':
+        if (speak) {
+          speak(`Your current speed is ${Math.max(detectedSpeed, 0).toFixed(0)} kilometers per hour`);
+        }
+        break;
+      case 'GET_LOCATION':
+        if (speak && currentLocation) {
+          speak(`You are at latitude ${currentLocation.lat.toFixed(2)} and longitude ${currentLocation.lng.toFixed(2)}`);
+        }
+        break;
+      case 'SAFETY_CHECK':
+        if (speak) {
+          speak(`Your safety score is ${stats.safetyScore.toFixed(0)} percent. ${stats.totalCollisions} collisions in the last 24 hours.`);
+        }
+        break;
+    }
+  }, [isRideActive, detectedSpeed, currentLocation, stats]);
+
+  const { speak, toggleListening, isSupported } = useVoiceCommands({
+    onCommand: handleVoiceCommand,
+    isListening: isVoiceListening,
+    setIsListening: setIsVoiceListening
+  });
 
   useEffect(() => {
     fetchStats();
@@ -32,14 +97,26 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    // Get initial location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setCurrentLocation({ lat: 28.6139, lng: 77.2090 }) // Default location
+        () => setCurrentLocation({ lat: 28.6139, lng: 77.2090 })
       );
     }
   }, []);
+
+  // Update location when ride is active
+  useEffect(() => {
+    if (!isRideActive) return;
+    
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => console.error('Geolocation error:', err),
+      { enableHighAccuracy: true }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [isRideActive]);
 
   const fetchStats = async () => {
     const { data: vehicles } = await supabase.from('vehicle_tracking').select('speed');
@@ -59,6 +136,11 @@ const Index = () => {
     setStats({ activeVehicles, totalCollisions, averageSpeed, safetyScore });
   };
 
+  const handleRouteCalculated = useCallback((coords: { lat: number; lng: number }[], zones: { lat: number; lng: number; reason: string }[]) => {
+    setRouteCoordinates(coords);
+    setDangerZones(zones);
+  }, []);
+
   const getSafetyScoreSeverity = (score: number) => {
     if (score >= 80) return 'safe';
     if (score >= 50) return 'warning';
@@ -77,7 +159,7 @@ const Index = () => {
             </h1>
             <p className="text-muted-foreground font-mono text-sm">Real-time monitoring & AI-powered alerts</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 ${
@@ -131,21 +213,42 @@ const Index = () => {
             </div>
             <div className="space-y-4">
               <RideController onRideStateChange={setIsRideActive} detectedSpeed={detectedSpeed} />
-              <EmergencySOS currentLocation={currentLocation} isRideActive={isRideActive} />
+              <VoiceControlPanel
+                isListening={isVoiceListening}
+                toggleListening={toggleListening}
+                isSupported={isSupported}
+                isMuted={isMuted}
+                setIsMuted={setIsMuted}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-            <div className="lg:col-span-2 h-[400px] bg-card rounded-lg p-4 border border-border">
-              <CollisionMap />
+            <div className="lg:col-span-2 h-[450px] bg-card rounded-lg p-4 border border-border">
+              <CollisionMap 
+                routeCoordinates={routeCoordinates}
+                dangerZones={dangerZones}
+                currentLocation={currentLocation}
+              />
             </div>
             <div className="space-y-4">
-              <SafeRouteAI currentLocation={currentLocation} />
+              <NavigationRoute 
+                currentLocation={currentLocation}
+                onRouteCalculated={handleRouteCalculated}
+                destination={destination}
+                setDestination={setDestination}
+                speak={isMuted ? undefined : speak}
+              />
+              <EmergencySOS currentLocation={currentLocation} isRideActive={isRideActive} />
+            </div>
+            <div className="space-y-4">
               <WeatherTrafficAlert currentLocation={currentLocation} />
+              <SafeRouteAI currentLocation={currentLocation} />
             </div>
-            <div>
-              <CollisionHistory />
-            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CollisionHistory />
           </div>
         </>
       ) : (
