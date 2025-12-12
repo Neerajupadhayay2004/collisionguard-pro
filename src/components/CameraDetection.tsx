@@ -3,8 +3,9 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import '@tensorflow/tfjs';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Camera, CameraOff, Gauge } from 'lucide-react';
+import { Camera, CameraOff, Gauge, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 interface Detection {
   class: string;
@@ -27,6 +28,15 @@ const CameraDetection = ({ onSpeedDetected, isRideActive }: CameraDetectionProps
   const [relativeSpeed, setRelativeSpeed] = useState<number>(0);
   const previousDetectionsRef = useRef<Map<string, { bbox: number[]; timestamp: number }>>(new Map());
   const animationFrameRef = useRef<number>();
+  
+  // Native camera hook
+  const { 
+    startStream, 
+    stopStream, 
+    takePhoto,
+    isNative,
+    checkPermissions,
+  } = useNativeCamera();
 
   useEffect(() => {
     loadModel();
@@ -50,19 +60,21 @@ const CameraDetection = ({ onSpeedDetected, isRideActive }: CameraDetectionProps
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
+      // Check permissions first
+      const hasPerms = await checkPermissions();
+      if (!hasPerms) {
+        toast.error('Camera permission required');
+        return;
+      }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+      if (!videoRef.current) return;
+
+      // Use native camera hook to start stream
+      const stream = await startStream(videoRef.current, 'environment');
+      
+      if (stream) {
         setIsActive(true);
-        toast.success('Camera started');
+        toast.success(isNative ? 'Native camera started' : 'Camera started');
         detectObjects();
       }
     } catch (error) {
@@ -72,11 +84,9 @@ const CameraDetection = ({ onSpeedDetected, isRideActive }: CameraDetectionProps
   };
 
   const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
+    // Use native camera hook to stop stream
+    stopStream();
+    
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -208,24 +218,47 @@ const CameraDetection = ({ onSpeedDetected, isRideActive }: CameraDetectionProps
         <h3 className="text-lg font-bold font-mono flex items-center gap-2">
           <Camera className="h-5 w-5" />
           Camera Detection
-        </h3>
-        <Button
-          onClick={isActive ? stopCamera : startCamera}
-          variant={isActive ? "destructive" : "default"}
-          disabled={!model}
-        >
-          {isActive ? (
-            <>
-              <CameraOff className="mr-2 h-4 w-4" />
-              Stop Camera
-            </>
-          ) : (
-            <>
-              <Camera className="mr-2 h-4 w-4" />
-              Start Camera
-            </>
+          {isNative && (
+            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+              NATIVE
+            </span>
           )}
-        </Button>
+        </h3>
+        <div className="flex gap-2">
+          <Button
+            onClick={isActive ? stopCamera : startCamera}
+            variant={isActive ? "destructive" : "default"}
+            disabled={!model}
+            size="sm"
+          >
+            {isActive ? (
+              <>
+                <CameraOff className="mr-2 h-4 w-4" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Camera className="mr-2 h-4 w-4" />
+                Start
+              </>
+            )}
+          </Button>
+          {isNative && (
+            <Button
+              onClick={async () => {
+                const photo = await takePhoto();
+                if (photo) {
+                  toast.success('Photo captured');
+                }
+              }}
+              variant="outline"
+              size="sm"
+              disabled={!isActive}
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
