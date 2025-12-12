@@ -17,12 +17,17 @@ import VoiceControlPanel from '@/components/VoiceControlPanel';
 import SpeedLimitAlert from '@/components/SpeedLimitAlert';
 import OfflineModeIndicator from '@/components/OfflineModeIndicator';
 import RealtimePanel from '@/components/RealtimePanel';
+import DriverFatigueDetector from '@/components/DriverFatigueDetector';
+import NightModeController from '@/components/NightModeController';
+import AccidentHeatmap from '@/components/AccidentHeatmap';
+import EmergencyContactsManager from '@/components/EmergencyContactsManager';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
 import { useRealtimeTracking } from '@/hooks/useRealtimeTracking';
-import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings } from 'lucide-react';
+import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [stats, setStats] = useState({
@@ -40,6 +45,7 @@ const Index = () => {
   const [destination, setDestination] = useState('');
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Offline mode hook
   const {
@@ -190,35 +196,50 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-3 sm:p-4 md:p-6 safe-area-top safe-area-bottom">
       <AlertSystem />
       
-      <header className="mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-          <div>
-            <h1 className="text-2xl md:text-4xl font-bold font-mono mb-2 bg-gradient-to-r from-safe to-primary bg-clip-text text-transparent">
-              Collision Prevention Dashboard
+      {/* Header - Mobile Optimized */}
+      <header className="mb-4 md:mb-6">
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-2xl md:text-4xl font-bold font-mono mb-1 gradient-text truncate">
+              Collision Prevention
             </h1>
-            <p className="text-muted-foreground font-mono text-sm">Real-time monitoring & AI-powered alerts</p>
+            <p className="text-muted-foreground font-mono text-[10px] sm:text-xs md:text-sm hidden sm:block">
+              Real-time monitoring & AI-powered alerts
+            </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg bg-muted text-muted-foreground touch-target"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 ${
-                activeTab === 'dashboard' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-              }`}
+              className={cn(
+                "px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 transition-colors",
+                activeTab === 'dashboard' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-secondary'
+              )}
             >
               <Map className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
+              Dashboard
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 ${
-                activeTab === 'history' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-              }`}
+              className={cn(
+                "px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 transition-colors",
+                activeTab === 'history' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-secondary'
+              )}
             >
               <History className="h-4 w-4" />
-              <span className="hidden sm:inline">History</span>
+              History
             </button>
             <DemoDataButton />
             <Link
@@ -226,13 +247,51 @@ const Index = () => {
               className="px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 bg-muted text-muted-foreground hover:bg-secondary transition-colors"
             >
               <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Settings</span>
+              Settings
             </Link>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-3 p-3 bg-card rounded-lg border border-border animate-fade-in">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
+                className={cn(
+                  "px-3 py-3 rounded-lg font-mono text-sm flex items-center justify-center gap-2 touch-target",
+                  activeTab === 'dashboard' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                )}
+              >
+                <Map className="h-4 w-4" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => { setActiveTab('history'); setMobileMenuOpen(false); }}
+                className={cn(
+                  "px-3 py-3 rounded-lg font-mono text-sm flex items-center justify-center gap-2 touch-target",
+                  activeTab === 'history' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                )}
+              >
+                <History className="h-4 w-4" />
+                History
+              </button>
+              <Link
+                to="/settings"
+                className="px-3 py-3 rounded-lg font-mono text-sm flex items-center justify-center gap-2 bg-muted text-muted-foreground touch-target"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
+              <DemoDataButton />
+            </div>
+          </div>
+        )}
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
+      {/* Stats Grid - Mobile Optimized */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 md:mb-6">
         <StatsCard title="Active Vehicles" value={stats.activeVehicles} icon={Activity} severity="safe" />
         <StatsCard
           title="24h Collisions"
@@ -257,7 +316,7 @@ const Index = () => {
       {activeTab === 'dashboard' ? (
         <>
           {/* Offline indicator */}
-          <div className="mb-4">
+          <div className="mb-3 md:mb-4">
             <OfflineModeIndicator
               isOffline={isOffline}
               cachedRoutesCount={cachedRoutes.length}
@@ -266,11 +325,12 @@ const Index = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div className="lg:col-span-2">
+          {/* Camera & Controls - Mobile Stacked */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
+            <div className="lg:col-span-2 order-2 lg:order-1">
               <CameraDetection onSpeedDetected={setDetectedSpeed} isRideActive={isRideActive} />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4 order-1 lg:order-2">
               <RideController onRideStateChange={setIsRideActive} detectedSpeed={detectedSpeed} />
               
               {/* Speed Limit Alert */}
@@ -294,20 +354,23 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-            <div className="lg:col-span-2 h-[450px] bg-card rounded-lg p-4 border border-border">
+          {/* Main Dashboard Grid - Mobile Optimized */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
+            {/* Map - Full width on mobile */}
+            <div className="md:col-span-2 h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] bg-card rounded-lg p-2 sm:p-3 md:p-4 border border-border">
               <CollisionMap 
                 routeCoordinates={routeCoordinates}
                 dangerZones={dangerZones}
                 currentLocation={currentLocation}
               />
             </div>
-            <div className="space-y-4">
+            
+            {/* Navigation & Emergency */}
+            <div className="space-y-3 md:space-y-4">
               <NavigationRoute 
                 currentLocation={currentLocation}
                 onRouteCalculated={(coords, zones) => {
                   handleRouteCalculated(coords, zones);
-                  // Cache route for offline use
                   if (currentLocation && destination) {
                     cacheRoute(currentLocation, destination, coords);
                   }
@@ -318,8 +381,9 @@ const Index = () => {
               />
               <EmergencySOS currentLocation={currentLocation} isRideActive={isRideActive} />
             </div>
-            <div className="space-y-4">
-              {/* Realtime Panel */}
+            
+            {/* Realtime & Weather */}
+            <div className="space-y-3 md:space-y-4">
               <RealtimePanel
                 nearbyVehicles={nearbyVehicles}
                 collisionWarnings={collisionWarnings}
@@ -327,16 +391,28 @@ const Index = () => {
                 isConnected={isConnected}
               />
               <WeatherTrafficAlert currentLocation={currentLocation} />
-              <SafeRouteAI currentLocation={currentLocation} />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* New Features Grid - Mobile 1 col, Tablet 2 col, Desktop 4 col */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
+            <DriverFatigueDetector 
+              isRideActive={isRideActive} 
+              onSpeak={isMuted ? undefined : speak}
+            />
+            <NightModeController isRideActive={isRideActive} />
+            <AccidentHeatmap currentLocation={currentLocation} />
+            <EmergencyContactsManager />
+          </div>
+
+          {/* Bottom Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-6">
+            <SafeRouteAI currentLocation={currentLocation} />
             <CollisionHistory />
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-6">
           <TripHistory />
           <CollisionHistory />
         </div>
