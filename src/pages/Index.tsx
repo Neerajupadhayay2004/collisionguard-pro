@@ -21,12 +21,16 @@ import DriverFatigueDetector from '@/components/DriverFatigueDetector';
 import NightModeController from '@/components/NightModeController';
 import AccidentHeatmap from '@/components/AccidentHeatmap';
 import EmergencyContactsManager from '@/components/EmergencyContactsManager';
+import MotionSensorDisplay from '@/components/MotionSensorDisplay';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
 import { useRealtimeTracking } from '@/hooks/useRealtimeTracking';
 import { useNativeGeolocation } from '@/hooks/useNativeGeolocation';
-import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X, MapPin } from 'lucide-react';
+import { useNativeSpeech } from '@/hooks/useNativeSpeech';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useOfflineStorage } from '@/hooks/useOfflineStorage';
+import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X, MapPin, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -62,6 +66,36 @@ const Index = () => {
     enableBackgroundTracking: false,
   });
 
+  // Native speech hook
+  const { 
+    speak: nativeSpeak, 
+    speakCollisionWarning,
+    speakSpeedWarning,
+    speakSOSConfirmation,
+    isSupported: isSpeechSupported,
+  } = useNativeSpeech();
+
+  // Push notifications hook
+  const {
+    hasPermission: hasNotificationPermission,
+    sendLocalNotification,
+    register: registerPushNotifications,
+  } = usePushNotifications({
+    onNotificationReceived: (notification) => {
+      console.log('Notification received:', notification);
+    },
+    autoRegister: true,
+  });
+
+  // Offline storage hook
+  const {
+    saveSettings,
+    getSettings,
+    cacheCollisionEvent,
+    getPendingCollisionEvents,
+    cacheEmergencyContacts,
+  } = useOfflineStorage();
+
   // Offline mode hook
   const {
     isOffline,
@@ -81,7 +115,7 @@ const Index = () => {
     currentSpeed: detectedSpeed,
     currentLocation,
     isActive: isRideActive,
-    onSpeak: isMuted ? undefined : (msg) => speak?.(msg),
+    onSpeak: isMuted ? undefined : (msg) => nativeSpeak?.(msg),
   });
 
   // Realtime tracking hook
@@ -94,7 +128,7 @@ const Index = () => {
     currentLocation,
     currentSpeed: detectedSpeed,
     isActive: isRideActive,
-    onSpeak: isMuted ? undefined : (msg) => speak?.(msg),
+    onSpeak: isMuted ? undefined : (msg) => nativeSpeak?.(msg),
   });
 
   // Voice command handler
@@ -130,22 +164,18 @@ const Index = () => {
         setDestination('');
         break;
       case 'GET_SPEED':
-        if (speak) {
-          speak(`Your current speed is ${Math.max(detectedSpeed, 0).toFixed(0)} kilometers per hour`);
-        }
+        nativeSpeak(`Your current speed is ${Math.max(detectedSpeed, 0).toFixed(0)} kilometers per hour`);
         break;
       case 'GET_LOCATION':
-        if (speak && currentLocation) {
-          speak(`You are at latitude ${currentLocation.lat.toFixed(2)} and longitude ${currentLocation.lng.toFixed(2)}`);
+        if (currentLocation) {
+          nativeSpeak(`You are at latitude ${currentLocation.lat.toFixed(2)} and longitude ${currentLocation.lng.toFixed(2)}`);
         }
         break;
       case 'SAFETY_CHECK':
-        if (speak) {
-          speak(`Your safety score is ${stats.safetyScore.toFixed(0)} percent. ${stats.totalCollisions} collisions in the last 24 hours.`);
-        }
+        nativeSpeak(`Your safety score is ${stats.safetyScore.toFixed(0)} percent. ${stats.totalCollisions} collisions in the last 24 hours.`);
         break;
     }
-  }, [isRideActive, detectedSpeed, currentLocation, stats]);
+  }, [isRideActive, detectedSpeed, currentLocation, stats, nativeSpeak]);
 
   const { speak, toggleListening, isSupported } = useVoiceCommands({
     onCommand: handleVoiceCommand,
@@ -414,7 +444,7 @@ const Index = () => {
                 }}
                 destination={destination}
                 setDestination={setDestination}
-                speak={isMuted ? undefined : speak}
+                speak={isMuted ? undefined : nativeSpeak}
               />
               <EmergencySOS currentLocation={currentLocation} isRideActive={isRideActive} />
             </div>
@@ -431,11 +461,30 @@ const Index = () => {
             </div>
           </div>
 
-          {/* New Features Grid - Mobile 1 col, Tablet 2 col, Desktop 4 col */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
+          {/* New Features Grid - Mobile 1 col, Tablet 2 col, Desktop 5 col */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
+            <MotionSensorDisplay 
+              isRideActive={isRideActive}
+              onCollisionDetected={async (result) => {
+                // Cache collision for offline sync
+                await cacheCollisionEvent({
+                  id: `motion-${Date.now()}`,
+                  severity: result.severity,
+                  location: currentLocation || { lat: 0, lng: 0 },
+                  timestamp: result.timestamp,
+                  synced: false,
+                });
+                // Send push notification
+                await sendLocalNotification(
+                  'Impact Detected!',
+                  `${result.severity.toUpperCase()} impact (${result.impactForce.toFixed(1)}G) from ${result.direction}`
+                );
+              }}
+              onSpeak={isMuted ? undefined : nativeSpeak}
+            />
             <DriverFatigueDetector 
               isRideActive={isRideActive} 
-              onSpeak={isMuted ? undefined : speak}
+              onSpeak={isMuted ? undefined : nativeSpeak}
             />
             <NightModeController isRideActive={isRideActive} />
             <AccidentHeatmap currentLocation={currentLocation} />
