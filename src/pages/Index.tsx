@@ -25,7 +25,8 @@ import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
 import { useRealtimeTracking } from '@/hooks/useRealtimeTracking';
-import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X } from 'lucide-react';
+import { useNativeGeolocation } from '@/hooks/useNativeGeolocation';
+import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +47,20 @@ const Index = () => {
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Native geolocation hook
+  const {
+    location: nativeLocation,
+    isTracking: isLocationTracking,
+    startTracking: startLocationTracking,
+    stopTracking: stopLocationTracking,
+    getCurrentPosition,
+    isNative: isNativePlatform,
+    speed: nativeSpeed,
+  } = useNativeGeolocation({
+    enableHighAccuracy: true,
+    enableBackgroundTracking: false,
+  });
 
   // Offline mode hook
   const {
@@ -144,27 +159,49 @@ const Index = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Get initial location using native geolocation
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setCurrentLocation({ lat: 28.6139, lng: 77.2090 })
-      );
+    const getInitialLocation = async () => {
+      const pos = await getCurrentPosition();
+      if (pos?.latitude && pos?.longitude) {
+        setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
+      } else {
+        // Fallback to default location
+        setCurrentLocation({ lat: 28.6139, lng: 77.2090 });
+      }
+    };
+    getInitialLocation();
+  }, [getCurrentPosition]);
+
+  // Start/stop location tracking with ride
+  useEffect(() => {
+    if (isRideActive) {
+      startLocationTracking();
+    } else {
+      stopLocationTracking();
     }
-  }, []);
+  }, [isRideActive, startLocationTracking, stopLocationTracking]);
 
-  // Update location when ride is active
+  // Update currentLocation from native geolocation when tracking
   useEffect(() => {
-    if (!isRideActive) return;
-    
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => console.error('Geolocation error:', err),
-      { enableHighAccuracy: true }
-    );
+    if (nativeLocation.latitude && nativeLocation.longitude) {
+      setCurrentLocation({ 
+        lat: nativeLocation.latitude, 
+        lng: nativeLocation.longitude 
+      });
+    }
+  }, [nativeLocation.latitude, nativeLocation.longitude]);
 
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [isRideActive]);
+  // Use native speed if available
+  useEffect(() => {
+    if (nativeSpeed !== null && nativeSpeed > 0) {
+      // Convert m/s to km/h
+      const speedKmh = nativeSpeed * 3.6;
+      if (speedKmh > detectedSpeed) {
+        setDetectedSpeed(speedKmh);
+      }
+    }
+  }, [nativeSpeed, detectedSpeed]);
 
   const fetchStats = async () => {
     const { data: vehicles } = await supabase.from('vehicle_tracking').select('speed');
