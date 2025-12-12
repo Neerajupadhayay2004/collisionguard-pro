@@ -13,7 +13,13 @@ import EmergencySOS from '@/components/EmergencySOS';
 import TripHistory from '@/components/TripHistory';
 import NavigationRoute from '@/components/NavigationRoute';
 import VoiceControlPanel from '@/components/VoiceControlPanel';
+import SpeedLimitAlert from '@/components/SpeedLimitAlert';
+import OfflineModeIndicator from '@/components/OfflineModeIndicator';
+import RealtimePanel from '@/components/RealtimePanel';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
+import { useOfflineMode } from '@/hooks/useOfflineMode';
+import { useRealtimeTracking } from '@/hooks/useRealtimeTracking';
 import { Activity, AlertTriangle, Gauge, Shield, Map, History } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,6 +39,41 @@ const Index = () => {
   const [destination, setDestination] = useState('');
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Offline mode hook
+  const {
+    isOffline,
+    cachedRoutes,
+    cacheSize,
+    cacheRoute,
+    clearCache,
+  } = useOfflineMode();
+
+  // Speed limit alert hook
+  const {
+    currentSpeedLimit,
+    roadType,
+    isOverLimit,
+    overLimitAmount,
+  } = useSpeedLimitAlert({
+    currentSpeed: detectedSpeed,
+    currentLocation,
+    isActive: isRideActive,
+    onSpeak: isMuted ? undefined : (msg) => speak?.(msg),
+  });
+
+  // Realtime tracking hook
+  const {
+    nearbyVehicles,
+    collisionWarnings,
+    trafficUpdates,
+    isConnected,
+  } = useRealtimeTracking({
+    currentLocation,
+    currentSpeed: detectedSpeed,
+    isActive: isRideActive,
+    onSpeak: isMuted ? undefined : (msg) => speak?.(msg),
+  });
 
   // Voice command handler
   const handleVoiceCommand = useCallback((command: string, params?: any) => {
@@ -207,12 +248,34 @@ const Index = () => {
 
       {activeTab === 'dashboard' ? (
         <>
+          {/* Offline indicator */}
+          <div className="mb-4">
+            <OfflineModeIndicator
+              isOffline={isOffline}
+              cachedRoutesCount={cachedRoutes.length}
+              cacheSize={cacheSize}
+              onClearCache={clearCache}
+            />
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <div className="lg:col-span-2">
               <CameraDetection onSpeedDetected={setDetectedSpeed} isRideActive={isRideActive} />
             </div>
             <div className="space-y-4">
               <RideController onRideStateChange={setIsRideActive} detectedSpeed={detectedSpeed} />
+              
+              {/* Speed Limit Alert */}
+              {isRideActive && (
+                <SpeedLimitAlert
+                  currentSpeed={detectedSpeed}
+                  speedLimit={currentSpeedLimit}
+                  isOverLimit={isOverLimit}
+                  overLimitAmount={overLimitAmount}
+                  roadType={roadType}
+                />
+              )}
+              
               <VoiceControlPanel
                 isListening={isVoiceListening}
                 toggleListening={toggleListening}
@@ -234,7 +297,13 @@ const Index = () => {
             <div className="space-y-4">
               <NavigationRoute 
                 currentLocation={currentLocation}
-                onRouteCalculated={handleRouteCalculated}
+                onRouteCalculated={(coords, zones) => {
+                  handleRouteCalculated(coords, zones);
+                  // Cache route for offline use
+                  if (currentLocation && destination) {
+                    cacheRoute(currentLocation, destination, coords);
+                  }
+                }}
                 destination={destination}
                 setDestination={setDestination}
                 speak={isMuted ? undefined : speak}
@@ -242,6 +311,13 @@ const Index = () => {
               <EmergencySOS currentLocation={currentLocation} isRideActive={isRideActive} />
             </div>
             <div className="space-y-4">
+              {/* Realtime Panel */}
+              <RealtimePanel
+                nearbyVehicles={nearbyVehicles}
+                collisionWarnings={collisionWarnings}
+                trafficUpdates={trafficUpdates}
+                isConnected={isConnected}
+              />
               <WeatherTrafficAlert currentLocation={currentLocation} />
               <SafeRouteAI currentLocation={currentLocation} />
             </div>
