@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
+import { useHaptics } from './useHaptics';
 
 interface SpeedLimit {
   limit: number;
@@ -39,6 +40,7 @@ export function useSpeedLimitAlert({
   const [overLimitAmount, setOverLimitAmount] = useState(0);
   const lastAlertRef = useRef<number>(0);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const { speedLimitHaptic } = useHaptics();
 
   // Get speed limit for current location
   const fetchSpeedLimit = useCallback(async () => {
@@ -144,6 +146,9 @@ export function useSpeedLimitAlert({
 
       // Play audio alert
       playAlertSound();
+      
+      // Haptic feedback
+      speedLimitHaptic();
 
       // Visual toast alert
       toast.warning(`Speed Alert: ${currentSpeed.toFixed(0)} km/h`, {

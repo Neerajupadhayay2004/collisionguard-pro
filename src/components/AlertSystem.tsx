@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Bell, Volume2 } from 'lucide-react';
+import { Bell, Volume2, Vibrate } from 'lucide-react';
 import { Button } from './ui/button';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface AlertLog {
   id: string;
@@ -13,8 +14,10 @@ interface AlertLog {
 
 const AlertSystem = () => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [isHapticEnabled, setIsHapticEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
   const [recentAlerts, setRecentAlerts] = useState<AlertLog[]>([]);
+  const { collisionWarningHaptic, isNative } = useHaptics();
 
   useEffect(() => {
     // Subscribe to collision events for alerts
@@ -71,7 +74,7 @@ const AlertSystem = () => {
   };
 
   const handleCollisionAlert = async (event: any) => {
-    const severity = event.severity;
+    const severity = event.severity as 'low' | 'medium' | 'high' | 'critical';
     const message = `${severity.toUpperCase()} COLLISION RISK! Speed: ${event.relative_speed.toFixed(1)} km/h`;
 
     // Show visual alert
@@ -79,6 +82,11 @@ const AlertSystem = () => {
       duration: 5000,
       icon: <Bell className="h-5 w-5" />,
     });
+
+    // Trigger haptic feedback on native devices
+    if (isHapticEnabled) {
+      collisionWarningHaptic(severity);
+    }
 
     // Generate audio alert using Gemini
     if (isAudioEnabled) {
@@ -98,7 +106,7 @@ const AlertSystem = () => {
     // Log the alert
     await supabase.from('alert_logs').insert({
       collision_event_id: event.id,
-      alert_type: isAudioEnabled ? 'audio' : 'visual',
+      alert_type: isHapticEnabled ? 'haptic' : isAudioEnabled ? 'audio' : 'visual',
       message
     });
   };
@@ -130,8 +138,24 @@ const AlertSystem = () => {
     toast.success(`Audio alerts ${!isAudioEnabled ? 'enabled' : 'disabled'}`);
   };
 
+  const toggleHaptic = () => {
+    setIsHapticEnabled(!isHapticEnabled);
+    toast.success(`Haptic feedback ${!isHapticEnabled ? 'enabled' : 'disabled'}`);
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      {isNative() && (
+        <Button
+          size="lg"
+          variant={isHapticEnabled ? "default" : "outline"}
+          onClick={toggleHaptic}
+          className="rounded-full shadow-lg font-mono"
+        >
+          <Vibrate className={`h-5 w-5 mr-2 ${isHapticEnabled ? 'animate-pulse' : ''}`} />
+          {isHapticEnabled ? 'Haptic ON' : 'Haptic OFF'}
+        </Button>
+      )}
       <Button
         size="lg"
         variant={isAudioEnabled ? "default" : "outline"}
