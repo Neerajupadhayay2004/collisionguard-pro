@@ -23,6 +23,7 @@ import AccidentHeatmap from '@/components/AccidentHeatmap';
 import EmergencyContactsManager from '@/components/EmergencyContactsManager';
 import MotionSensorDisplay from '@/components/MotionSensorDisplay';
 import NotificationManager from '@/components/NotificationManager';
+import DeviceStatus from '@/components/DeviceStatus';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
@@ -463,7 +464,7 @@ const Index = () => {
           </div>
 
           {/* New Features Grid - Mobile 1 col, Tablet 2 col, Desktop 5 col */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
             <MotionSensorDisplay 
               isRideActive={isRideActive}
               onCollisionDetected={async (result) => {
@@ -490,6 +491,7 @@ const Index = () => {
             <NightModeController isRideActive={isRideActive} />
             <AccidentHeatmap currentLocation={currentLocation} />
             <NotificationManager isRideActive={isRideActive} />
+            <DeviceStatus onBatteryLow={() => nativeSpeak('Warning. Battery is low. Consider charging soon.')} />
             <EmergencyContactsManager />
           </div>
 
