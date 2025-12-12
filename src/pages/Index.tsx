@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import CollisionMap from '@/components/CollisionMap';
 import StatsCard from '@/components/StatsCard';
@@ -20,7 +21,7 @@ import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
 import { useRealtimeTracking } from '@/hooks/useRealtimeTracking';
-import { Activity, AlertTriangle, Gauge, Shield, Map, History } from 'lucide-react';
+import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -220,6 +221,13 @@ const Index = () => {
               <span className="hidden sm:inline">History</span>
             </button>
             <DemoDataButton />
+            <Link
+              to="/settings"
+              className="px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 bg-muted text-muted-foreground hover:bg-secondary transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </Link>
           </div>
         </div>
       </header>
