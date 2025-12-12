@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useHaptics } from './useHaptics';
 
 interface TrackedVehicle {
   id: string;
@@ -51,6 +52,7 @@ export function useRealtimeTracking({
   const [isConnected, setIsConnected] = useState(false);
   const lastWarningRef = useRef<number>(0);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const { collisionWarningHaptic } = useHaptics();
 
   // Calculate distance between two coordinates (Haversine formula)
   const calculateDistance = useCallback((
@@ -210,6 +212,7 @@ export function useRealtimeTracking({
           })[0];
 
           playWarningSound(mostCritical.severity);
+          collisionWarningHaptic(mostCritical.severity);
           
           toast.error(`⚠️ Collision Warning!`, {
             description: `Vehicle ${mostCritical.distance.toFixed(0)}m away - ${mostCritical.severity.toUpperCase()}`,

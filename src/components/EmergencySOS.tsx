@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { AlertCircle, Phone, Plus, X, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface EmergencyContact {
   id: string;
@@ -23,6 +24,7 @@ const EmergencySOS = ({ currentLocation, isRideActive }: EmergencySOSProps) => {
   const [showAddContact, setShowAddContact] = useState(false);
   const [newContact, setNewContact] = useState({ name: '', phone: '' });
   const [sosActive, setSosActive] = useState(false);
+  const { sosHaptic, notificationSuccess } = useHaptics();
 
   useEffect(() => {
     fetchContacts();
@@ -82,6 +84,9 @@ const EmergencySOS = ({ currentLocation, isRideActive }: EmergencySOSProps) => {
 
     setIsSending(true);
     setSosActive(true);
+    
+    // Trigger SOS haptic pattern
+    sosHaptic();
 
     try {
       // Create SOS alert in database
@@ -125,6 +130,7 @@ const EmergencySOS = ({ currentLocation, isRideActive }: EmergencySOSProps) => {
       .eq('status', 'active');
 
     setSosActive(false);
+    notificationSuccess();
     toast.success('SOS cancelled');
   };
 
