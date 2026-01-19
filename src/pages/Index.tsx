@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import CollisionMap from '@/components/CollisionMap';
+import EnhancedCollisionMap from '@/components/EnhancedCollisionMap';
 import StatsCard from '@/components/StatsCard';
 import CollisionHistory from '@/components/CollisionHistory';
 import AlertSystem from '@/components/AlertSystem';
 import DemoDataButton from '@/components/DemoDataButton';
-import CameraDetection from '@/components/CameraDetection';
+import AdvancedCameraDetection from '@/components/AdvancedCameraDetection';
 import RideController from '@/components/RideController';
 import SafeRouteAI from '@/components/SafeRouteAI';
 import WeatherTrafficAlert from '@/components/WeatherTrafficAlert';
@@ -16,6 +16,7 @@ import NavigationRoute from '@/components/NavigationRoute';
 import VoiceControlPanel from '@/components/VoiceControlPanel';
 import SpeedLimitAlert from '@/components/SpeedLimitAlert';
 import OfflineModeIndicator from '@/components/OfflineModeIndicator';
+import NetworkStatusIndicator from '@/components/NetworkStatusIndicator';
 import RealtimePanel from '@/components/RealtimePanel';
 import DriverFatigueDetector from '@/components/DriverFatigueDetector';
 import NightModeController from '@/components/NightModeController';
@@ -32,7 +33,8 @@ import { useNativeGeolocation } from '@/hooks/useNativeGeolocation';
 import { useNativeSpeech } from '@/hooks/useNativeSpeech';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
-import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X, MapPin, Bell } from 'lucide-react';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X, MapPin, Bell, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -397,7 +399,11 @@ const Index = () => {
           {/* Camera & Controls - Mobile Stacked */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
             <div className="lg:col-span-2 order-2 lg:order-1">
-              <CameraDetection onSpeedDetected={setDetectedSpeed} isRideActive={isRideActive} />
+              <AdvancedCameraDetection 
+                onSpeedDetected={setDetectedSpeed} 
+                isRideActive={isRideActive}
+                onSpeak={isMuted ? undefined : nativeSpeak}
+              />
             </div>
             <div className="space-y-3 md:space-y-4 order-1 lg:order-2">
               <RideController onRideStateChange={setIsRideActive} detectedSpeed={detectedSpeed} />
@@ -427,10 +433,12 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
             {/* Map - Full width on mobile */}
             <div className="md:col-span-2 h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] bg-card rounded-lg p-2 sm:p-3 md:p-4 border border-border">
-              <CollisionMap 
+              <EnhancedCollisionMap 
                 routeCoordinates={routeCoordinates}
                 dangerZones={dangerZones}
                 currentLocation={currentLocation}
+                isRideActive={isRideActive}
+                nearbyVehicleCount={nearbyVehicles.length}
               />
             </div>
             
