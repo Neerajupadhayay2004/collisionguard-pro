@@ -1,12 +1,12 @@
 
-👉 **[https://colosion.netlify.app/](https://colosion.netlify.app/)**
+👉 **[https://collosion.netlify.app/](https://collosion.netlify.app/)**
 
 # 🚦 Colosion – Smart Collision Avoidance & Rider Safety System
 
 **Colosion** is a **full-stack, real-time, AI-powered safety and navigation platform** built to prevent road accidents and enhance rider safety.
 It combines **real-time navigation, AI camera detection, collision warnings, offline support, native mobile features, and advanced maps** into one **fully responsive Progressive Web App (PWA)** that also runs as a **native Android & iOS app using Capacitor**.
 
-🔗 **Live Demo:** [https://colosion.netlify.app/](https://colosion.netlify.app/)
+🔗 **Live Demo:** [https://collosion.netlify.app/](https://collosion.netlify.app/)
 
 ---
 
