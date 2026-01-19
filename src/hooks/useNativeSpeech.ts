@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 interface UseNativeSpeechOptions {
   defaultRate?: number;
@@ -17,6 +17,7 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
 
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const isSpeakingRef = useRef(false);
+  const [hasUserInteraction, setHasUserInteraction] = useState(false);
 
   const isNative = () => {
     return typeof window !== 'undefined' && 
@@ -26,6 +27,11 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
   // Check if speech synthesis is supported
   const isSupported = useCallback((): boolean => {
     return 'speechSynthesis' in window;
+  }, []);
+
+  // Enable speech after user interaction (required by browsers)
+  const enableSpeech = useCallback(() => {
+    setHasUserInteraction(true);
   }, []);
 
   // Speak text using Web Speech API (works on native too via WebView)
@@ -44,39 +50,54 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
       return;
     }
 
-    return new Promise((resolve, reject) => {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
+    // On web, speech requires user interaction first
+    // Silently fail if no user interaction yet (don't throw errors)
+    if (!hasUserInteraction && !isNative()) {
+      console.log('Speech deferred - waiting for user interaction');
+      return;
+    }
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = options?.rate ?? defaultRate;
-      utterance.pitch = options?.pitch ?? defaultPitch;
-      utterance.volume = options?.volume ?? defaultVolume;
-      utterance.lang = options?.lang ?? defaultLang;
+    return new Promise((resolve) => {
+      try {
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
 
-      if (options?.voice) {
-        utterance.voice = options.voice;
-      }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = options?.rate ?? defaultRate;
+        utterance.pitch = options?.pitch ?? defaultPitch;
+        utterance.volume = options?.volume ?? defaultVolume;
+        utterance.lang = options?.lang ?? defaultLang;
 
-      utterance.onstart = () => {
-        isSpeakingRef.current = true;
-      };
+        if (options?.voice) {
+          utterance.voice = options.voice;
+        }
 
-      utterance.onend = () => {
-        isSpeakingRef.current = false;
+        utterance.onstart = () => {
+          isSpeakingRef.current = true;
+        };
+
+        utterance.onend = () => {
+          isSpeakingRef.current = false;
+          resolve();
+        };
+
+        utterance.onerror = (event) => {
+          isSpeakingRef.current = false;
+          // Don't log common "interrupted" errors - they happen when speech is canceled
+          if (event.error !== 'interrupted' && event.error !== 'not-allowed') {
+            console.warn('Speech synthesis:', event.error);
+          }
+          resolve(); // Resolve instead of reject to prevent unhandled promise rejections
+        };
+
+        utteranceRef.current = utterance;
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.warn('Speech synthesis failed:', error);
         resolve();
-      };
-
-      utterance.onerror = (event) => {
-        isSpeakingRef.current = false;
-        console.error('Speech synthesis error:', event.error);
-        reject(new Error(event.error));
-      };
-
-      utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
+      }
     });
-  }, [isSupported, defaultRate, defaultPitch, defaultVolume, defaultLang]);
+  }, [isSupported, defaultRate, defaultPitch, defaultVolume, defaultLang, hasUserInteraction]);
 
   // Stop speaking
   const stop = useCallback((): void => {
@@ -163,6 +184,7 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
     resume,
     getVoices,
     isSpeaking,
+    enableSpeech,
     isSupported: isSupported(),
     isNative: isNative(),
     // Pre-built voice alerts

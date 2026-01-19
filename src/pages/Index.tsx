@@ -76,6 +76,7 @@ const Index = () => {
     speakCollisionWarning,
     speakSpeedWarning,
     speakSOSConfirmation,
+    enableSpeech,
     isSupported: isSpeechSupported,
   } = useNativeSpeech();
 
@@ -108,6 +109,15 @@ const Index = () => {
     cacheRoute,
     clearCache,
   } = useOfflineMode();
+
+  // Network status hook
+  const {
+    connected: networkConnected,
+    connectionType,
+    connectionQuality,
+    isWifi,
+    isCellular,
+  } = useNetworkStatus({ showToasts: true });
 
   // Speed limit alert hook
   const {
@@ -267,16 +277,30 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-3 sm:p-4 md:p-6 safe-area-top safe-area-bottom">
+    <div 
+      className="min-h-screen bg-background text-foreground p-3 sm:p-4 md:p-6 safe-area-top safe-area-bottom"
+      onClick={enableSpeech} // Enable speech on first user interaction
+    >
       <AlertSystem />
       
       {/* Header - Mobile Optimized */}
       <header className="mb-4 md:mb-6">
         <div className="flex justify-between items-center gap-2">
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-2xl md:text-4xl font-bold font-mono mb-1 gradient-text truncate">
-              Collision Prevention
-            </h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-lg sm:text-2xl md:text-4xl font-bold font-mono gradient-text truncate">
+                Collision Prevention
+              </h1>
+              {/* Network Status - Compact on mobile */}
+              <NetworkStatusIndicator
+                connected={networkConnected}
+                connectionType={connectionType}
+                connectionQuality={connectionQuality}
+                isWifi={isWifi}
+                isCellular={isCellular}
+                compact
+              />
+            </div>
             <p className="text-muted-foreground font-mono text-[10px] sm:text-xs md:text-sm hidden sm:block">
               Real-time monitoring & AI-powered alerts
             </p>

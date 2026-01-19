@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { 
@@ -37,13 +37,27 @@ const DeviceStatus = ({ onBatteryLow }: DeviceStatusProps) => {
     isLoading,
   } = useDeviceInfo();
 
-  // Alert on low battery
+  // Track if we've already alerted for low battery to prevent spam
+  const hasAlertedRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
+
+  // Alert on low battery - but not on initial load to prevent speech errors
   useEffect(() => {
-    if (isBatteryLow) {
+    // Skip initial load to avoid triggering speech before user interaction
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+
+    // Only alert if battery becomes low (transition from not-low to low)
+    if (isBatteryLow && !hasAlertedRef.current) {
+      hasAlertedRef.current = true;
       toast.warning('Battery Low', {
         description: `Battery at ${batteryPercentage}%. Consider charging soon.`,
       });
       onBatteryLow?.();
+    } else if (!isBatteryLow) {
+      hasAlertedRef.current = false;
     }
   }, [isBatteryLow, batteryPercentage, onBatteryLow]);
 
