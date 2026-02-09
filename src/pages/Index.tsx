@@ -25,6 +25,9 @@ import EmergencyContactsManager from '@/components/EmergencyContactsManager';
 import MotionSensorDisplay from '@/components/MotionSensorDisplay';
 import NotificationManager from '@/components/NotificationManager';
 import DeviceStatus from '@/components/DeviceStatus';
+import AIChatAssistant from '@/components/AIChatAssistant';
+import UnifiedCollisionRisk from '@/components/UnifiedCollisionRisk';
+import LiveDashboardHeader from '@/components/LiveDashboardHeader';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
@@ -34,7 +37,7 @@ import { useNativeSpeech } from '@/hooks/useNativeSpeech';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X, MapPin, Bell, Wifi, WifiOff } from 'lucide-react';
+import { Activity, AlertTriangle, Gauge, Shield, Map, History, Settings, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -152,7 +155,6 @@ const Index = () => {
     switch (command) {
       case 'START_RIDE':
         if (!isRideActive) {
-          // Trigger start ride - this will be handled by RideController
           document.querySelector<HTMLButtonElement>('[data-ride-button="start"]')?.click();
         }
         break;
@@ -203,47 +205,33 @@ const Index = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Get initial location using native geolocation
   useEffect(() => {
     const getInitialLocation = async () => {
       const pos = await getCurrentPosition();
       if (pos?.latitude && pos?.longitude) {
         setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
       } else {
-        // Fallback to default location
         setCurrentLocation({ lat: 28.6139, lng: 77.2090 });
       }
     };
     getInitialLocation();
   }, [getCurrentPosition]);
 
-  // Start/stop location tracking with ride
   useEffect(() => {
-    if (isRideActive) {
-      startLocationTracking();
-    } else {
-      stopLocationTracking();
-    }
+    if (isRideActive) startLocationTracking();
+    else stopLocationTracking();
   }, [isRideActive, startLocationTracking, stopLocationTracking]);
 
-  // Update currentLocation from native geolocation when tracking
   useEffect(() => {
     if (nativeLocation.latitude && nativeLocation.longitude) {
-      setCurrentLocation({ 
-        lat: nativeLocation.latitude, 
-        lng: nativeLocation.longitude 
-      });
+      setCurrentLocation({ lat: nativeLocation.latitude, lng: nativeLocation.longitude });
     }
   }, [nativeLocation.latitude, nativeLocation.longitude]);
 
-  // Use native speed if available
   useEffect(() => {
     if (nativeSpeed !== null && nativeSpeed > 0) {
-      // Convert m/s to km/h
       const speedKmh = nativeSpeed * 3.6;
-      if (speedKmh > detectedSpeed) {
-        setDetectedSpeed(speedKmh);
-      }
+      if (speedKmh > detectedSpeed) setDetectedSpeed(speedKmh);
     }
   }, [nativeSpeed, detectedSpeed]);
 
@@ -279,19 +267,18 @@ const Index = () => {
   return (
     <div 
       className="min-h-screen bg-background text-foreground p-3 sm:p-4 md:p-6 safe-area-top safe-area-bottom"
-      onClick={enableSpeech} // Enable speech on first user interaction
+      onClick={enableSpeech}
     >
       <AlertSystem />
       
-      {/* Header - Mobile Optimized */}
+      {/* Header */}
       <header className="mb-4 md:mb-6">
         <div className="flex justify-between items-center gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-lg sm:text-2xl md:text-4xl font-bold font-mono gradient-text truncate">
-                Collision Prevention
+                CollisionGuard Pro
               </h1>
-              {/* Network Status - Compact on mobile */}
               <NetworkStatusIndicator
                 connected={networkConnected}
                 connectionType={connectionType}
@@ -302,11 +289,10 @@ const Index = () => {
               />
             </div>
             <p className="text-muted-foreground font-mono text-[10px] sm:text-xs md:text-sm hidden sm:block">
-              Real-time monitoring & AI-powered alerts
+              AI-Powered Real-time Collision Prevention & Driver Safety
             </p>
           </div>
           
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-lg bg-muted text-muted-foreground touch-target"
@@ -314,7 +300,6 @@ const Index = () => {
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('dashboard')}
@@ -323,8 +308,7 @@ const Index = () => {
                 activeTab === 'dashboard' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-secondary'
               )}
             >
-              <Map className="h-4 w-4" />
-              Dashboard
+              <Map className="h-4 w-4" /> Dashboard
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -333,21 +317,18 @@ const Index = () => {
                 activeTab === 'history' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-secondary'
               )}
             >
-              <History className="h-4 w-4" />
-              History
+              <History className="h-4 w-4" /> History
             </button>
             <DemoDataButton />
             <Link
               to="/settings"
               className="px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 bg-muted text-muted-foreground hover:bg-secondary transition-colors"
             >
-              <Settings className="h-4 w-4" />
-              Settings
+              <Settings className="h-4 w-4" /> Settings
             </Link>
           </div>
         </div>
 
-        {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-3 p-3 bg-card rounded-lg border border-border animate-fade-in">
             <div className="grid grid-cols-2 gap-2">
@@ -358,8 +339,7 @@ const Index = () => {
                   activeTab === 'dashboard' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 )}
               >
-                <Map className="h-4 w-4" />
-                Dashboard
+                <Map className="h-4 w-4" /> Dashboard
               </button>
               <button
                 onClick={() => { setActiveTab('history'); setMobileMenuOpen(false); }}
@@ -368,16 +348,14 @@ const Index = () => {
                   activeTab === 'history' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 )}
               >
-                <History className="h-4 w-4" />
-                History
+                <History className="h-4 w-4" /> History
               </button>
               <Link
                 to="/settings"
                 className="px-3 py-3 rounded-lg font-mono text-sm flex items-center justify-center gap-2 bg-muted text-muted-foreground touch-target"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Settings className="h-4 w-4" />
-                Settings
+                <Settings className="h-4 w-4" /> Settings
               </Link>
               <DemoDataButton />
             </div>
@@ -385,7 +363,7 @@ const Index = () => {
         )}
       </header>
 
-      {/* Stats Grid - Mobile Optimized */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 md:mb-6">
         <StatsCard title="Active Vehicles" value={stats.activeVehicles} icon={Activity} severity="safe" />
         <StatsCard
@@ -410,6 +388,16 @@ const Index = () => {
 
       {activeTab === 'dashboard' ? (
         <>
+          {/* Live Dashboard Header - Shows during active rides */}
+          <LiveDashboardHeader
+            currentSpeed={detectedSpeed}
+            safetyScore={stats.safetyScore}
+            isRideActive={isRideActive}
+            nearbyVehicles={nearbyVehicles.length}
+            collisionWarnings={collisionWarnings.length}
+            isConnected={isConnected}
+          />
+
           {/* Offline indicator */}
           <div className="mb-3 md:mb-4">
             <OfflineModeIndicator
@@ -420,7 +408,7 @@ const Index = () => {
             />
           </div>
 
-          {/* Camera & Controls - Mobile Stacked */}
+          {/* Camera & Controls */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
             <div className="lg:col-span-2 order-2 lg:order-1">
               <AdvancedCameraDetection 
@@ -432,7 +420,6 @@ const Index = () => {
             <div className="space-y-3 md:space-y-4 order-1 lg:order-2">
               <RideController onRideStateChange={setIsRideActive} detectedSpeed={detectedSpeed} />
               
-              {/* Speed Limit Alert */}
               {isRideActive && (
                 <SpeedLimitAlert
                   currentSpeed={detectedSpeed}
@@ -453,9 +440,9 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Main Dashboard Grid - Mobile Optimized */}
+          {/* Main Dashboard Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
-            {/* Map - Full width on mobile */}
+            {/* Map */}
             <div className="md:col-span-2 h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] bg-card rounded-lg p-2 sm:p-3 md:p-4 border border-border">
               <EnhancedCollisionMap 
                 routeCoordinates={routeCoordinates}
@@ -466,8 +453,15 @@ const Index = () => {
               />
             </div>
             
-            {/* Navigation & Emergency */}
+            {/* Unified Collision Risk + Navigation */}
             <div className="space-y-3 md:space-y-4">
+              <UnifiedCollisionRisk
+                currentSpeed={detectedSpeed}
+                nearbyVehicles={nearbyVehicles.length}
+                collisionWarnings={collisionWarnings}
+                isRideActive={isRideActive}
+                isOverSpeedLimit={isOverLimit}
+              />
               <NavigationRoute 
                 currentLocation={currentLocation}
                 onRouteCalculated={(coords, zones) => {
@@ -495,12 +489,11 @@ const Index = () => {
             </div>
           </div>
 
-          {/* New Features Grid - Mobile 1 col, Tablet 2 col, Desktop 5 col */}
+          {/* Features Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6">
             <MotionSensorDisplay 
               isRideActive={isRideActive}
               onCollisionDetected={async (result) => {
-                // Cache collision for offline sync
                 await cacheCollisionEvent({
                   id: `motion-${Date.now()}`,
                   severity: result.severity,
@@ -508,7 +501,6 @@ const Index = () => {
                   timestamp: result.timestamp,
                   synced: false,
                 });
-                // Send push notification
                 await sendLocalNotification(
                   'Impact Detected!',
                   `${result.severity.toUpperCase()} impact (${result.impactForce.toFixed(1)}G) from ${result.direction}`
@@ -539,6 +531,15 @@ const Index = () => {
           <CollisionHistory />
         </div>
       )}
+
+      {/* AI Chat Assistant - Floating */}
+      <AIChatAssistant
+        currentSpeed={detectedSpeed}
+        isRideActive={isRideActive}
+        currentLocation={currentLocation}
+        safetyScore={stats.safetyScore}
+        collisionWarnings={collisionWarnings.length}
+      />
     </div>
   );
 };
