@@ -5,6 +5,7 @@ import { AlertCircle, Phone, Plus, X, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useTelegramAlert } from '@/hooks/useTelegramAlert';
 
 interface EmergencyContact {
   id: string;
@@ -25,6 +26,7 @@ const EmergencySOS = ({ currentLocation, isRideActive }: EmergencySOSProps) => {
   const [newContact, setNewContact] = useState({ name: '', phone: '' });
   const [sosActive, setSosActive] = useState(false);
   const { sosHaptic, notificationSuccess } = useHaptics();
+  const { sendAlert } = useTelegramAlert();
 
   useEffect(() => {
     fetchContacts();
@@ -99,20 +101,22 @@ const EmergencySOS = ({ currentLocation, isRideActive }: EmergencySOSProps) => {
 
       if (error) throw error;
 
+      // Send Telegram SOS alert
+      await sendAlert('sos', {
+        lat: currentLocation.lat,
+        lng: currentLocation.lng,
+        message: `Emergency SOS! Contacts: ${contacts.map(c => `${c.name} (${c.phone})`).join(', ')}`,
+      });
+
       // Show notification with location
       toast.error(
         <div className="space-y-2">
           <p className="font-bold">🚨 SOS ALERT SENT!</p>
           <p className="text-sm">Location: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}</p>
-          <p className="text-xs">Emergency contacts have been notified</p>
+          <p className="text-xs">Emergency contacts & Telegram notified</p>
         </div>,
         { duration: 10000 }
       );
-
-      // Simulate sending to contacts
-      contacts.forEach(contact => {
-        console.log(`SOS sent to ${contact.name} at ${contact.phone}`);
-      });
 
     } catch (error) {
       console.error('Error triggering SOS:', error);

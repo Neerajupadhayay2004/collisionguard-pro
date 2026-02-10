@@ -4,6 +4,7 @@ import { Card } from './ui/card';
 import { MapPin, Play, Square, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useTelegramAlert } from '@/hooks/useTelegramAlert';
 
 interface RideControllerProps {
   onRideStateChange: (isActive: boolean) => void;
@@ -18,6 +19,8 @@ const RideController = ({ onRideStateChange, detectedSpeed }: RideControllerProp
   const watchIdRef = useRef<number | null>(null);
   const vehicleIdRef = useRef<string>(`V${Date.now()}`);
   const lastLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const { sendAlert } = useTelegramAlert();
+  const liveLocationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -84,6 +87,16 @@ const RideController = ({ onRideStateChange, detectedSpeed }: RideControllerProp
       onRideStateChange(true);
       toast.success('Ride started - Monitoring active');
 
+      // Send Telegram ride start alert
+      const loc = lastLocationRef.current;
+      if (loc) sendAlert('ride_start', { lat: loc.lat, lng: loc.lng });
+
+      // Start live location sharing every 60s
+      liveLocationIntervalRef.current = setInterval(() => {
+        const cur = lastLocationRef.current;
+        if (cur) sendAlert('live_location', { lat: cur.lat, lng: cur.lng, speed: detectedSpeed });
+      }, 60000);
+
       // Insert initial vehicle tracking
       await supabase.from('vehicle_tracking').insert({
         vehicle_id: vehicleIdRef.current,
@@ -106,6 +119,12 @@ const RideController = ({ onRideStateChange, detectedSpeed }: RideControllerProp
       watchIdRef.current = null;
     }
 
+    // Stop live location sharing
+    if (liveLocationIntervalRef.current) {
+      clearInterval(liveLocationIntervalRef.current);
+      liveLocationIntervalRef.current = null;
+    }
+
     // Update vehicle status to stopped
     if (vehicleIdRef.current) {
       await supabase
@@ -113,6 +132,9 @@ const RideController = ({ onRideStateChange, detectedSpeed }: RideControllerProp
         .update({ status: 'stopped' })
         .eq('vehicle_id', vehicleIdRef.current);
     }
+
+    // Send Telegram ride stop
+    sendAlert('ride_stop', { distance, maxSpeed: currentSpeed });
 
     setIsRideActive(false);
     onRideStateChange(false);
@@ -191,6 +213,15 @@ const RideController = ({ onRideStateChange, detectedSpeed }: RideControllerProp
           distance,
           vehicle_count: 2,
           alert_sent: true
+        });
+
+        // Send Telegram collision alert
+        sendAlert('collision', {
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          severity,
+          relativeSpeed,
+          distance,
         });
       }
     });

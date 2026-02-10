@@ -28,3 +28,6 @@ verify_jwt = false
 
 [functions.ai-assistant]
 verify_jwt = false
+
+[functions.telegram-alert]
+verify_jwt = false
