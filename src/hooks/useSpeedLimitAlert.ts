@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { useHaptics } from './useHaptics';
+import { useTelegramAlert } from './useTelegramAlert';
 
 interface SpeedLimit {
   limit: number;
@@ -12,6 +13,7 @@ interface SpeedLimitAlertOptions {
   currentLocation: { lat: number; lng: number } | null;
   isActive: boolean;
   onSpeak?: (message: string) => void;
+  enableTelegram?: boolean;
 }
 
 // Default speed limits by road type (in km/h)
@@ -31,6 +33,7 @@ export function useSpeedLimitAlert({
   currentLocation,
   isActive,
   onSpeak,
+  enableTelegram = true,
 }: SpeedLimitAlertOptions) {
   const [currentSpeedLimit, setCurrentSpeedLimit] = useState<SpeedLimit>({
     limit: 50,
@@ -41,6 +44,8 @@ export function useSpeedLimitAlert({
   const lastAlertRef = useRef<number>(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const { speedLimitHaptic } = useHaptics();
+  const { sendAlert } = useTelegramAlert();
+  const telegramCooldownRef = useRef<number>(0);
 
   // Get speed limit for current location
   const fetchSpeedLimit = useCallback(async () => {
@@ -159,6 +164,17 @@ export function useSpeedLimitAlert({
       // Voice alert
       if (onSpeak) {
         onSpeak(`Warning! You are ${Math.round(speedDiff)} kilometers per hour over the speed limit.`);
+      }
+
+      // Telegram alert (throttled to once per 30s to avoid spam)
+      if (enableTelegram && currentLocation && Date.now() - telegramCooldownRef.current > 30000) {
+        telegramCooldownRef.current = Date.now();
+        sendAlert('speed_alert', {
+          currentSpeed: currentSpeed,
+          speedLimit: currentSpeedLimit.limit,
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+        });
       }
     }
   }, [currentSpeed, currentSpeedLimit, isActive, playAlertSound, onSpeak]);
