@@ -1,110 +1,98 @@
-import { useCallback, useEffect } from 'react';
-
-// Lazy-load Capacitor haptics to avoid crashes in web browsers
-let H: any = null;
-let IS: any = {};
-let NT: any = {};
-let loaded = false;
-
-const loadHaptics = async () => {
-  if (loaded) return;
-  loaded = true;
-  try {
-    const mod = await import('@capacitor/haptics');
-    H = mod.Haptics;
-    IS = mod.ImpactStyle;
-    NT = mod.NotificationType;
-  } catch {
-    // Not available in web
-  }
-};
+import { useCallback } from 'react';
 
 export function useHaptics() {
-  useEffect(() => { loadHaptics(); }, []);
-
   const isNative = () => {
     return typeof window !== 'undefined' && 
            (window as any).Capacitor?.isNativePlatform?.();
   };
 
-  const impactLight = useCallback(async () => {
-    if (isNative() && H) await H.impact({ style: IS.Light });
+  const safeHaptic = useCallback(async (fn: () => Promise<void>) => {
+    if (!isNative()) return;
+    try { await fn(); } catch { /* not available */ }
   }, []);
 
-  const impactMedium = useCallback(async () => {
-    if (isNative() && H) await H.impact({ style: IS.Medium });
-  }, []);
+  const impactLight = useCallback(() => safeHaptic(async () => {
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+    await Haptics.impact({ style: ImpactStyle.Light });
+  }), [safeHaptic]);
 
-  const impactHeavy = useCallback(async () => {
-    if (isNative() && H) await H.impact({ style: IS.Heavy });
-  }, []);
+  const impactMedium = useCallback(() => safeHaptic(async () => {
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+    await Haptics.impact({ style: ImpactStyle.Medium });
+  }), [safeHaptic]);
 
-  const notificationSuccess = useCallback(async () => {
-    if (isNative() && H) await H.notification({ type: NT.Success });
-  }, []);
+  const impactHeavy = useCallback(() => safeHaptic(async () => {
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+    await Haptics.impact({ style: ImpactStyle.Heavy });
+  }), [safeHaptic]);
 
-  const notificationWarning = useCallback(async () => {
-    if (isNative() && H) await H.notification({ type: NT.Warning });
-  }, []);
+  const notificationSuccess = useCallback(() => safeHaptic(async () => {
+    const { Haptics, NotificationType } = await import('@capacitor/haptics');
+    await Haptics.notification({ type: NotificationType.Success });
+  }), [safeHaptic]);
 
-  const notificationError = useCallback(async () => {
-    if (isNative() && H) await H.notification({ type: NT.Error });
-  }, []);
+  const notificationWarning = useCallback(() => safeHaptic(async () => {
+    const { Haptics, NotificationType } = await import('@capacitor/haptics');
+    await Haptics.notification({ type: NotificationType.Warning });
+  }), [safeHaptic]);
 
-  const vibrate = useCallback(async (duration: number = 300) => {
-    if (isNative() && H) await H.vibrate({ duration });
-  }, []);
+  const notificationError = useCallback(() => safeHaptic(async () => {
+    const { Haptics, NotificationType } = await import('@capacitor/haptics');
+    await Haptics.notification({ type: NotificationType.Error });
+  }), [safeHaptic]);
+
+  const vibrate = useCallback((duration: number = 300) => safeHaptic(async () => {
+    const { Haptics } = await import('@capacitor/haptics');
+    await Haptics.vibrate({ duration });
+  }), [safeHaptic]);
 
   const collisionWarningHaptic = useCallback(async (
     severity: 'low' | 'medium' | 'high' | 'critical'
   ) => {
-    if (!isNative() || !H) return;
-    switch (severity) {
-      case 'critical':
-        await H.vibrate({ duration: 500 });
-        setTimeout(() => H.vibrate({ duration: 500 }), 600);
-        setTimeout(() => H.vibrate({ duration: 500 }), 1200);
-        break;
-      case 'high':
-        await H.impact({ style: IS.Heavy });
-        setTimeout(() => H.impact({ style: IS.Heavy }), 200);
-        break;
-      case 'medium':
-        await H.impact({ style: IS.Medium });
-        break;
-      case 'low':
-        await H.notification({ type: NT.Warning });
-        break;
-    }
+    if (!isNative()) return;
+    try {
+      const { Haptics, ImpactStyle, NotificationType } = await import('@capacitor/haptics');
+      switch (severity) {
+        case 'critical':
+          await Haptics.vibrate({ duration: 500 });
+          setTimeout(() => Haptics.vibrate({ duration: 500 }).catch(() => {}), 600);
+          setTimeout(() => Haptics.vibrate({ duration: 500 }).catch(() => {}), 1200);
+          break;
+        case 'high':
+          await Haptics.impact({ style: ImpactStyle.Heavy });
+          setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {}), 200);
+          break;
+        case 'medium':
+          await Haptics.impact({ style: ImpactStyle.Medium });
+          break;
+        case 'low':
+          await Haptics.notification({ type: NotificationType.Warning });
+          break;
+      }
+    } catch { /* not available */ }
   }, []);
 
   const sosHaptic = useCallback(async () => {
-    if (!isNative() || !H) return;
-    const shortDuration = 100;
-    const longDuration = 300;
-    const shortGap = 100;
-    const longGap = 200;
-    let delay = 0;
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => H.vibrate({ duration: shortDuration }), delay);
-      delay += shortDuration + shortGap;
-    }
-    delay += longGap;
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => H.vibrate({ duration: longDuration }), delay);
-      delay += longDuration + shortGap;
-    }
-    delay += longGap;
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => H.vibrate({ duration: shortDuration }), delay);
-      delay += shortDuration + shortGap;
-    }
+    if (!isNative()) return;
+    try {
+      const { Haptics } = await import('@capacitor/haptics');
+      const short = 100, long = 300, sGap = 100, lGap = 200;
+      let d = 0;
+      for (let i = 0; i < 3; i++) { setTimeout(() => Haptics.vibrate({ duration: short }).catch(() => {}), d); d += short + sGap; }
+      d += lGap;
+      for (let i = 0; i < 3; i++) { setTimeout(() => Haptics.vibrate({ duration: long }).catch(() => {}), d); d += long + sGap; }
+      d += lGap;
+      for (let i = 0; i < 3; i++) { setTimeout(() => Haptics.vibrate({ duration: short }).catch(() => {}), d); d += short + sGap; }
+    } catch { /* not available */ }
   }, []);
 
   const speedLimitHaptic = useCallback(async () => {
-    if (!isNative() || !H) return;
-    await H.notification({ type: NT.Error });
-    setTimeout(() => H.notification({ type: NT.Error }), 300);
+    if (!isNative()) return;
+    try {
+      const { Haptics, NotificationType } = await import('@capacitor/haptics');
+      await Haptics.notification({ type: NotificationType.Error });
+      setTimeout(() => Haptics.notification({ type: NotificationType.Error }).catch(() => {}), 300);
+    } catch { /* not available */ }
   }, []);
 
   return {
