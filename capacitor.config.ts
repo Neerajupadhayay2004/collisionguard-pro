@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.4ec3380894a642c5a169346af33bd83f',
-  appName: 'Collision Prevention',
+  appName: 'Eco Rider AI',
   webDir: 'dist',
   server: {
     url: 'https://4ec33808-94a6-42c5-a169-346af33bd83f.lovableproject.com?forceHideBadge=true',
