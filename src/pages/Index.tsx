@@ -277,7 +277,7 @@ const Index = () => {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-lg sm:text-2xl md:text-4xl font-bold font-mono gradient-text truncate">
-                CollisionGuard Pro
+                Eco Rider AI
               </h1>
               <NetworkStatusIndicator
                 connected={networkConnected}
