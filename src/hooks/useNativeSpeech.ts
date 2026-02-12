@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 
 interface UseNativeSpeechOptions {
   defaultRate?: number;
@@ -11,7 +11,7 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
   const {
     defaultRate = 1.0,
     defaultPitch = 1.0,
-    defaultVolume = 1.0, // Max volume
+    defaultVolume = 1.0,
     defaultLang = 'en-US',
   } = options;
 
@@ -24,17 +24,46 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
            (window as any).Capacitor?.isNativePlatform?.();
   };
 
+  // Auto-enable speech on ANY user interaction (click/tap/key)
+  useEffect(() => {
+    if (hasUserInteraction) return;
+    
+    const unlock = () => {
+      setHasUserInteraction(true);
+      // Warm up speech synthesis so it's ready
+      if ('speechSynthesis' in window) {
+        const warmup = new SpeechSynthesisUtterance('');
+        warmup.volume = 0;
+        window.speechSynthesis.speak(warmup);
+        window.speechSynthesis.cancel();
+      }
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [hasUserInteraction]);
+
   // Check if speech synthesis is supported
   const isSupported = useCallback((): boolean => {
     return 'speechSynthesis' in window;
   }, []);
 
-  // Enable speech after user interaction (required by browsers)
+  // Enable speech manually (kept for backward compat)
   const enableSpeech = useCallback(() => {
     setHasUserInteraction(true);
   }, []);
 
-  // Speak text using Web Speech API (works on native too via WebView)
+  // Speak text using Web Speech API
   const speak = useCallback(async (
     text: string,
     options?: {
@@ -46,16 +75,16 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
     }
   ): Promise<void> => {
     if (!isSupported()) {
-      console.warn('Speech synthesis not supported');
+      console.warn('[Speech] Not supported in this browser');
       return;
     }
 
-    // On web, speech requires user interaction first
-    // Silently fail if no user interaction yet (don't throw errors)
     if (!hasUserInteraction && !isNative()) {
-      console.log('Speech deferred - waiting for user interaction');
+      console.log('[Speech] Waiting for user interaction - will auto-enable on first click');
       return;
     }
+
+    console.log('[Speech] Speaking:', text.substring(0, 50) + '...');
 
     return new Promise((resolve) => {
       try {
@@ -73,27 +102,45 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
         }
 
         utterance.onstart = () => {
+          console.log('[Speech] Started speaking');
           isSpeakingRef.current = true;
         };
 
         utterance.onend = () => {
+          console.log('[Speech] Finished speaking');
           isSpeakingRef.current = false;
           resolve();
         };
 
         utterance.onerror = (event) => {
           isSpeakingRef.current = false;
-          // Don't log common "interrupted" errors - they happen when speech is canceled
           if (event.error !== 'interrupted' && event.error !== 'not-allowed') {
-            console.warn('Speech synthesis:', event.error);
+            console.warn('[Speech] Error:', event.error);
           }
-          resolve(); // Resolve instead of reject to prevent unhandled promise rejections
+          resolve();
         };
 
         utteranceRef.current = utterance;
         window.speechSynthesis.speak(utterance);
+
+        // Chrome bug fix: speech synthesis stops after ~15s
+        // Keep it alive with periodic resume calls
+        const keepAlive = setInterval(() => {
+          if (!window.speechSynthesis.speaking) {
+            clearInterval(keepAlive);
+            return;
+          }
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }, 10000);
+
+        utterance.onend = () => {
+          clearInterval(keepAlive);
+          isSpeakingRef.current = false;
+          resolve();
+        };
       } catch (error) {
-        console.warn('Speech synthesis failed:', error);
+        console.warn('[Speech] Failed:', error);
         resolve();
       }
     });
