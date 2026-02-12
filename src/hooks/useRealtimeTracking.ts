@@ -225,6 +225,7 @@ export function useRealtimeTracking({
             return order[a.severity] - order[b.severity];
           })[0];
 
+          console.log('[RealtimeTracking] Collision warning:', mostCritical.severity, 'distance:', mostCritical.distance);
           playWarningSound(mostCritical.severity);
           collisionWarningHaptic(mostCritical.severity);
           
@@ -235,9 +236,12 @@ export function useRealtimeTracking({
 
           if (onSpeak) {
             const message = mostCritical.severity === 'critical'
-              ? `Critical collision warning! Vehicle ${Math.round(mostCritical.distance)} meters ahead!`
-              : `Collision warning. Vehicle approaching at ${Math.round(mostCritical.distance)} meters.`;
+              ? `DANGER! DANGER! Critical collision warning! Vehicle ${Math.round(mostCritical.distance)} meters ahead! Brake immediately!`
+              : `WARNING! Collision warning. Vehicle approaching at ${Math.round(mostCritical.distance)} meters. Reduce speed now!`;
+            console.log('[RealtimeTracking] Speaking:', message);
             onSpeak(message);
+          } else {
+            console.log('[RealtimeTracking] onSpeak not available - isMuted or not provided');
           }
         }
       }
