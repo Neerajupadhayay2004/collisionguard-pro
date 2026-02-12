@@ -90,7 +90,7 @@ export function useSpeedLimitAlert({
     }
   }, [currentLocation]);
 
-  // Play alert sound
+  // Play alert sound - LOUD
   const playAlertSound = useCallback(() => {
     try {
       if (!audioContextRef.current) {
@@ -98,34 +98,24 @@ export function useSpeedLimitAlert({
       }
       
       const ctx = audioContextRef.current;
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
 
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      const playTone = (freq: number, startTime: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.8, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+        osc.start(startTime);
+        osc.stop(startTime + 0.5);
+      };
 
-      oscillator.frequency.value = 880; // A5 note
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.5);
-
-      // Double beep for urgency
-      setTimeout(() => {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.frequency.value = 988; // B5 note
-        osc2.type = 'sine';
-        gain2.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-        osc2.start();
-        osc2.stop(ctx.currentTime + 0.5);
-      }, 200);
+      // Triple beep - loud and urgent
+      playTone(880, ctx.currentTime);
+      playTone(988, ctx.currentTime + 0.2);
+      playTone(1100, ctx.currentTime + 0.4);
     } catch (error) {
       console.error('Failed to play alert sound:', error);
     }

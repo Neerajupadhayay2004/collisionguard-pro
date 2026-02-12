@@ -11,7 +11,7 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
   const {
     defaultRate = 1.0,
     defaultPitch = 1.0,
-    defaultVolume = 1.0,
+    defaultVolume = 1.0, // Max volume
     defaultLang = 'en-US',
   } = options;
 
@@ -133,34 +133,47 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
     return window.speechSynthesis.speaking;
   }, [isSupported]);
 
-  // Collision warning voice alert
+  // Collision warning voice alert - LOUD and repeated
   const speakCollisionWarning = useCallback(async (
     severity: 'low' | 'medium' | 'high' | 'critical',
     distance: number,
     direction?: string
   ): Promise<void> => {
     const messages = {
-      critical: `Critical collision warning! Vehicle ${distance} meters ${direction || 'ahead'}! Brake immediately!`,
-      high: `Warning! Vehicle approaching ${distance} meters ${direction || 'ahead'}. Reduce speed.`,
-      medium: `Caution. Vehicle detected ${distance} meters ${direction || 'ahead'}.`,
+      critical: `DANGER! DANGER! Critical collision warning! Vehicle ${distance} meters ${direction || 'ahead'}! Brake immediately! Brake now!`,
+      high: `WARNING! WARNING! Vehicle approaching ${distance} meters ${direction || 'ahead'}! Reduce speed now!`,
+      medium: `Caution! Vehicle detected ${distance} meters ${direction || 'ahead'}. Stay alert.`,
       low: `Vehicle nearby at ${distance} meters.`,
     };
 
+    // Speak with max volume, louder for critical
     await speak(messages[severity], {
-      rate: severity === 'critical' ? 1.3 : 1.0,
-      pitch: severity === 'critical' ? 1.2 : 1.0,
+      rate: severity === 'critical' ? 1.2 : severity === 'high' ? 1.1 : 1.0,
+      pitch: severity === 'critical' ? 1.3 : severity === 'high' ? 1.1 : 1.0,
+      volume: 1.0,
     });
+
+    // Repeat critical and high warnings after a short delay
+    if (severity === 'critical' || severity === 'high') {
+      setTimeout(async () => {
+        await speak(messages[severity], {
+          rate: 1.1,
+          pitch: 1.2,
+          volume: 1.0,
+        });
+      }, 3000);
+    }
   }, [speak]);
 
-  // Speed limit warning voice alert
+  // Speed limit warning voice alert - LOUD
   const speakSpeedWarning = useCallback(async (
     currentSpeed: number,
     speedLimit: number
   ): Promise<void> => {
     const overAmount = currentSpeed - speedLimit;
     await speak(
-      `Speed warning. You are ${Math.round(overAmount)} kilometers per hour over the limit. Current speed ${Math.round(currentSpeed)}. Limit ${speedLimit}.`,
-      { rate: 1.1 }
+      `Speed warning! You are ${Math.round(overAmount)} kilometers per hour over the limit! Current speed ${Math.round(currentSpeed)}. Limit ${speedLimit}. Slow down now!`,
+      { rate: 1.1, volume: 1.0, pitch: 1.1 }
     );
   }, [speak]);
 
@@ -169,12 +182,19 @@ export function useNativeSpeech(options: UseNativeSpeechOptions = {}) {
     await speak(instruction, { rate: 0.95 });
   }, [speak]);
 
-  // SOS confirmation voice
+  // SOS confirmation voice - LOUD and repeated
   const speakSOSConfirmation = useCallback(async (): Promise<void> => {
     await speak(
-      'SOS alert activated. Emergency contacts have been notified. Help is on the way.',
-      { rate: 0.9, pitch: 0.9 }
+      'SOS alert activated! Emergency contacts have been notified! Help is on the way!',
+      { rate: 0.95, pitch: 1.0, volume: 1.0 }
     );
+    // Repeat SOS confirmation
+    setTimeout(async () => {
+      await speak(
+        'Emergency SOS is active. Stay calm. Help is coming.',
+        { rate: 0.9, volume: 1.0 }
+      );
+    }, 4000);
   }, [speak]);
 
   return {
