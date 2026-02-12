@@ -69,7 +69,7 @@ export function useRealtimeTracking({
     return R * c;
   }, []);
 
-  // Play collision warning sound
+  // Play collision warning sound - LOUD
   const playWarningSound = useCallback((severity: 'low' | 'medium' | 'high' | 'critical') => {
     try {
       if (!audioContextRef.current) {
@@ -77,13 +77,7 @@ export function useRealtimeTracking({
       }
       
       const ctx = audioContextRef.current;
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
 
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      // Different tones for different severity levels
       const frequencies = {
         low: 440,
         medium: 660,
@@ -91,31 +85,51 @@ export function useRealtimeTracking({
         critical: 1100,
       };
 
-      oscillator.frequency.value = frequencies[severity];
-      oscillator.type = severity === 'critical' ? 'square' : 'sine';
-      
-      gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      const volumes = {
+        low: 0.5,
+        medium: 0.7,
+        high: 0.9,
+        critical: 1.0,
+      };
 
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.3);
+      const durations = {
+        low: 0.3,
+        medium: 0.4,
+        high: 0.5,
+        critical: 0.6,
+      };
 
-      // Multiple beeps for critical warnings
-      if (severity === 'critical' || severity === 'high') {
-        [150, 300].forEach(delay => {
-          setTimeout(() => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = frequencies[severity];
-            osc.type = severity === 'critical' ? 'square' : 'sine';
-            gain.gain.setValueAtTime(0.4, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.3);
-          }, delay);
-        });
+      const playBeep = (freq: number, vol: number, dur: number, startTime: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = severity === 'critical' ? 'square' : 'sine';
+        gain.gain.setValueAtTime(vol, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + dur);
+        osc.start(startTime);
+        osc.stop(startTime + dur);
+      };
+
+      const vol = volumes[severity];
+      const dur = durations[severity];
+      const freq = frequencies[severity];
+
+      // First beep
+      playBeep(freq, vol, dur, ctx.currentTime);
+
+      // Multiple beeps for critical/high warnings - keeps beeping
+      if (severity === 'critical') {
+        for (let i = 1; i <= 5; i++) {
+          playBeep(freq, vol, dur, ctx.currentTime + i * 0.25);
+        }
+      } else if (severity === 'high') {
+        for (let i = 1; i <= 3; i++) {
+          playBeep(freq, vol, dur, ctx.currentTime + i * 0.3);
+        }
+      } else if (severity === 'medium') {
+        playBeep(freq, vol, dur, ctx.currentTime + 0.35);
       }
     } catch (error) {
       console.error('Failed to play warning sound:', error);
