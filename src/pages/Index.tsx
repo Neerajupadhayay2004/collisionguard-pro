@@ -28,6 +28,7 @@ import DeviceStatus from '@/components/DeviceStatus';
 import AIChatAssistant from '@/components/AIChatAssistant';
 import UnifiedCollisionRisk from '@/components/UnifiedCollisionRisk';
 import LiveDashboardHeader from '@/components/LiveDashboardHeader';
+import ThemeToggle from '@/components/ThemeToggle';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
@@ -287,6 +288,7 @@ const Index = () => {
                 isCellular={isCellular}
                 compact
               />
+              <ThemeToggle />
             </div>
             <p className="text-muted-foreground font-mono text-[10px] sm:text-xs md:text-sm hidden sm:block">
               AI-Powered Real-time Collision Prevention & Driver Safety
