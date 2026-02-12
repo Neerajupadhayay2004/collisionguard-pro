@@ -7,8 +7,71 @@ All colors MUST be HSL.
 */
 
 @layer base {
+  /* Light theme */
   :root {
-    /* Dark monitoring theme - Tech dashboard aesthetic */
+    --background: 210 40% 96%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 90%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 93%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Alert colors */
+    --danger: 0 84% 50%;
+    --danger-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 45%;
+    --warning-foreground: 222 47% 11%;
+
+    --safe: 142 76% 36%;
+    --safe-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 85%;
+    --input: 214 32% 85%;
+    --ring: 142 76% 36%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 84% 50%), hsl(0 84% 60%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 45%), hsl(38 92% 55%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    
+    --glow-safe: 0 0 15px hsl(142 76% 36% / 0.2);
+    --glow-danger: 0 0 15px hsl(0 84% 50% / 0.2);
+    --glow-warning: 0 0 15px hsl(38 92% 45% / 0.2);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 93%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 85%;
+    --sidebar-ring: 142 76% 36%;
+  }
+
+  /* Dark theme */
+  .dark {
     --background: 222 47% 4%;
     --foreground: 210 40% 98%;
 
@@ -18,7 +81,6 @@ All colors MUST be HSL.
     --popover: 222 47% 6%;
     --popover-foreground: 210 40% 98%;
 
-    /* Neon accent colors for alerts */
     --primary: 142 76% 36%;
     --primary-foreground: 144 76% 98%;
 
@@ -31,7 +93,6 @@ All colors MUST be HSL.
     --accent: 142 76% 36%;
     --accent-foreground: 144 76% 98%;
 
-    /* Alert colors */
     --danger: 0 84% 60%;
     --danger-foreground: 210 40% 98%;
     
@@ -48,21 +109,23 @@ All colors MUST be HSL.
     --input: 217 33% 17%;
     --ring: 142 76% 36%;
 
-    --radius: 0.75rem;
-
-    /* Gradients for depth */
     --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
     --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 70%));
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 60%));
     --gradient-card: linear-gradient(180deg, hsl(222 47% 6%), hsl(222 47% 4%));
     
-    /* Glow effects */
     --glow-safe: 0 0 20px hsl(142 76% 36% / 0.3);
     --glow-danger: 0 0 20px hsl(0 84% 60% / 0.3);
     --glow-warning: 0 0 20px hsl(38 92% 50% / 0.3);
 
-    /* Animation */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 144 76% 98%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 142 76% 36%;
   }
 }
 
