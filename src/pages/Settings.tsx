@@ -49,23 +49,12 @@ const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
       {/* Header */}
-      <header className="mb-6">
-        <div className="flex items-center gap-4">
-          <Link to="/">
-            <Button variant="ghost" size="icon" className="hover:bg-secondary">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-mono bg-gradient-to-r from-safe to-primary bg-clip-text text-transparent">
-              Settings
-            </h1>
-            <p className="text-muted-foreground font-mono text-sm">Customize your experience</p>
-          </div>
-        </div>
-      </header>
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold font-mono gradient-text mb-2">Settings</h1>
+        <p className="text-muted-foreground text-sm md:text-base">Customize your experience</p>
+      </div>
 
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Alert Thresholds */}
