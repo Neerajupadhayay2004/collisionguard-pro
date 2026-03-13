@@ -14,7 +14,8 @@ interface NavbarProps {
 }
 
 const navLinks = [
-  { to: '/', label: 'Dashboard', icon: Map },
+  { to: '/', label: 'Home', icon: Home },
+  { to: '/dashboard', label: 'Dashboard', icon: Map },
   { to: '/features', label: 'Features', icon: Activity },
   { to: '/history', label: 'History', icon: History },
   { to: '/emergency', label: 'Emergency', icon: Phone },
