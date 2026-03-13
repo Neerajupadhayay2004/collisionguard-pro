@@ -22,6 +22,7 @@ import AIChatAssistant from '@/components/AIChatAssistant';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
+import { useOfflineGeolocation } from '@/hooks/useOfflineGeolocation';
 import { useRealtimeTracking } from '@/hooks/useRealtimeTracking';
 import { useNativeGeolocation } from '@/hooks/useNativeGeolocation';
 import { useNativeSpeech } from '@/hooks/useNativeSpeech';
