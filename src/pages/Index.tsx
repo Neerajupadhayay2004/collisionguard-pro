@@ -123,11 +123,17 @@ const Index = () => {
   useEffect(() => {
     const getInitialLocation = async () => {
       const pos = await getCurrentPosition();
-      if (pos?.latitude && pos?.longitude) setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
-      else setCurrentLocation({ lat: 28.6139, lng: 77.2090 });
+      if (pos?.latitude && pos?.longitude) {
+        setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
+      } else {
+        // Offline fallback
+        const offlinePos = await getOfflinePosition();
+        if (offlinePos) setCurrentLocation({ lat: offlinePos.lat, lng: offlinePos.lng });
+        else setCurrentLocation({ lat: 28.6139, lng: 77.2090 });
+      }
     };
     getInitialLocation();
-  }, [getCurrentPosition]);
+  }, [getCurrentPosition, getOfflinePosition]);
 
   useEffect(() => {
     if (isRideActive) startLocationTracking(); else stopLocationTracking();
