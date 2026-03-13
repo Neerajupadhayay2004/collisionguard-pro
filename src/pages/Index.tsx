@@ -205,6 +205,7 @@ const Index = () => {
             <SpeedLimitAlert currentSpeed={detectedSpeed} speedLimit={currentSpeedLimit} isOverLimit={isOverLimit} overLimitAmount={overLimitAmount} roadType={roadType} />
           )}
           <VoiceControlPanel isListening={isVoiceListening} toggleListening={toggleListening} isSupported={isSupported} isMuted={isMuted} setIsMuted={setIsMuted} />
+          <BluetoothPanel onSpeedUpdate={(speed) => { if (speed > detectedSpeed) setDetectedSpeed(speed); }} />
         </div>
       </div>
 
