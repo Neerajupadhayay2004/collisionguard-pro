@@ -17,6 +17,7 @@ import RealtimePanel from '@/components/RealtimePanel';
 import LiveDashboardHeader from '@/components/LiveDashboardHeader';
 import UnifiedCollisionRisk from '@/components/UnifiedCollisionRisk';
 import SafeRouteAI from '@/components/SafeRouteAI';
+import BluetoothPanel from '@/components/BluetoothPanel';
 import AIChatAssistant from '@/components/AIChatAssistant';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
