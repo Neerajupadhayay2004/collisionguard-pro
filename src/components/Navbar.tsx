@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Shield, Map, History, Settings, Activity, Phone } from 'lucide-react';
+import { Menu, X, Shield, Map, History, Settings, Activity, Phone, Home } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import NetworkStatusIndicator from '@/components/NetworkStatusIndicator';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,8 @@ interface NavbarProps {
 }
 
 const navLinks = [
-  { to: '/', label: 'Dashboard', icon: Map },
+  { to: '/', label: 'Home', icon: Home },
+  { to: '/dashboard', label: 'Dashboard', icon: Map },
   { to: '/features', label: 'Features', icon: Activity },
   { to: '/history', label: 'History', icon: History },
   { to: '/emergency', label: 'Emergency', icon: Phone },

@@ -17,10 +17,12 @@ import RealtimePanel from '@/components/RealtimePanel';
 import LiveDashboardHeader from '@/components/LiveDashboardHeader';
 import UnifiedCollisionRisk from '@/components/UnifiedCollisionRisk';
 import SafeRouteAI from '@/components/SafeRouteAI';
+import BluetoothPanel from '@/components/BluetoothPanel';
 import AIChatAssistant from '@/components/AIChatAssistant';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { useSpeedLimitAlert } from '@/hooks/useSpeedLimitAlert';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
+import { useOfflineGeolocation } from '@/hooks/useOfflineGeolocation';
 import { useRealtimeTracking } from '@/hooks/useRealtimeTracking';
 import { useNativeGeolocation } from '@/hooks/useNativeGeolocation';
 import { useNativeSpeech } from '@/hooks/useNativeSpeech';
@@ -62,6 +64,7 @@ const Index = () => {
 
   const { cacheCollisionEvent } = useOfflineStorage();
   const { isOffline, cachedRoutes, cacheSize, cacheRoute, clearCache } = useOfflineMode();
+  const { getCurrentPosition: getOfflinePosition, startTracking: startOfflineTracking, stopTracking: stopOfflineTracking, locationSource } = useOfflineGeolocation();
 
   const { currentSpeedLimit, roadType, isOverLimit, overLimitAmount } = useSpeedLimitAlert({
     currentSpeed: detectedSpeed,
@@ -120,11 +123,17 @@ const Index = () => {
   useEffect(() => {
     const getInitialLocation = async () => {
       const pos = await getCurrentPosition();
-      if (pos?.latitude && pos?.longitude) setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
-      else setCurrentLocation({ lat: 28.6139, lng: 77.2090 });
+      if (pos?.latitude && pos?.longitude) {
+        setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
+      } else {
+        // Offline fallback
+        const offlinePos = await getOfflinePosition();
+        if (offlinePos) setCurrentLocation({ lat: offlinePos.lat, lng: offlinePos.lng });
+        else setCurrentLocation({ lat: 28.6139, lng: 77.2090 });
+      }
     };
     getInitialLocation();
-  }, [getCurrentPosition]);
+  }, [getCurrentPosition, getOfflinePosition]);
 
   useEffect(() => {
     if (isRideActive) startLocationTracking(); else stopLocationTracking();
@@ -202,6 +211,7 @@ const Index = () => {
             <SpeedLimitAlert currentSpeed={detectedSpeed} speedLimit={currentSpeedLimit} isOverLimit={isOverLimit} overLimitAmount={overLimitAmount} roadType={roadType} />
           )}
           <VoiceControlPanel isListening={isVoiceListening} toggleListening={toggleListening} isSupported={isSupported} isMuted={isMuted} setIsMuted={setIsMuted} />
+          <BluetoothPanel onSpeedUpdate={(speed) => { if (speed > detectedSpeed) setDetectedSpeed(speed); }} />
         </div>
       </div>
 
