@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Shield, Map, History, Settings, Activity, Phone } from 'lucide-react';
+import { Menu, X, Shield, Map, History, Settings, Activity, Phone, Home } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import NetworkStatusIndicator from '@/components/NetworkStatusIndicator';
 import { cn } from '@/lib/utils';
