@@ -64,6 +64,7 @@ const Index = () => {
 
   const { cacheCollisionEvent } = useOfflineStorage();
   const { isOffline, cachedRoutes, cacheSize, cacheRoute, clearCache } = useOfflineMode();
+  const { getCurrentPosition: getOfflinePosition, startTracking: startOfflineTracking, stopTracking: stopOfflineTracking, locationSource } = useOfflineGeolocation();
 
   const { currentSpeedLimit, roadType, isOverLimit, overLimitAmount } = useSpeedLimitAlert({
     currentSpeed: detectedSpeed,
